@@ -1,129 +1,197 @@
 --********Création de la base de données*******
 
--- Database: "BD_PROJET"
+
+REVOKE ALL ON SCHEMA public FROM public;
+DROP SCHEMA IF EXISTS webapp CASCADE;
+DROP DATABASE webappbd;
+
 
 -- DROP DATABASE "BD_PROJET";
-
-CREATE DATABASE "BD_PROJET"
+CREATE DATABASE webappbd
   WITH OWNER = postgres
       ENCODING = 'UTF8'
+      LC_COLLATE = 'fr_FR.UTF-8'
+      LC_CTYPE = 'fr_FR.UTF-8';
 
-CREATE TABLE role
+\c webappbd postgres
+
+
+
+CREATE SCHEMA webapp;
+
+
+
+DROP TABLE IF EXISTS role CASCADE;
+DROP TABLE IF EXISTS utilisateur CASCADE;
+DROP TABLE IF EXISTS proposition CASCADE;
+DROP TABLE IF EXISTS repondre CASCADE;
+DROP TABLE IF EXISTS statut CASCADE;
+DROP TABLE IF EXISTS sondage CASCADE;
+DROP TABLE IF EXISTS question CASCADE;
+DROP TABLE IF EXISTS questionProposition CASCADE;
+
+
+CREATE TABLE IF NOT EXISTS webapp.role
 (
 	rol_id SERIAL CONSTRAINT pk_rol_id PRIMARY KEY,
 	rol_nom VARCHAR(30)
 );
 
 --***********INSERTION TABLE role ******************************************
-INSERT INTO role (rol_nom) VALUES ('administrateur');
-INSERT INTO role (rol_nom) VALUES ('utilisateur');
+INSERT INTO webapp.role (rol_nom) VALUES ('administrateur');
+INSERT INTO webapp.role (rol_nom) VALUES ('utilisateur');
 
 
-CREATE TABLE utilisateur
+
+
+CREATE TABLE IF NOT EXISTS webapp.utilisateur
 (
 	util_id SERIAL CONSTRAINT pk_util_id PRIMARY KEY,
 	util_identifiant VARCHAR(30),
 	util_prenom VARCHAR(30),
 	util_nom VARCHAR(30),
-	util_pass CHAR(100),
-	util_session CHAR(100),
+	util_pass CHAR(128),
+	util_session_token CHAR(64),
 	util_role_id INT,
 	CONSTRAINT un_util_identifiant UNIQUE(util_identifiant),
-	CONSTRAINT fk_util_role_id FOREIGN KEY(util_role_id) REFERENCES role(rol_id)
+	CONSTRAINT fk_util_role_id FOREIGN KEY(util_role_id) REFERENCES webapp.role(rol_id)
 );
 
 
 --***********INSERTION TABLE utilisateurs******************************************
-INSERT INTO utilisateur (util_prenom, util_nom, util_pass, util_role_id) VALUES ('philippe','philippe','gautier','password', 2);
-INSERT INTO utilisateur (util_prenom, util_nom, util_pass, util_role_id) VALUES ('rémi','rémi','maison','password', 2);
-INSERT INTO utilisateur (util_prenom, util_nom, util_pass, util_role_id) VALUES ('admin','jésus','christ','password', 1);
+INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_role_id) VALUES ('philippe','philippe','gautier','54c4e215116d756def14fddeb8ce375130d226881b3a9469940c1a247fdae38d893162094d33535d328f7dbf1498cce6ce2c0c00e65723722ce783e72494ba0a', 2);
+INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_role_id) VALUES ('rémi','rémi','maison','ef0fb9eeaab088c45cbf18ccb3d1e7695a8ed022f6bd0b218d4df7cee6e8ed90bb4723d11c6a5c6bf49eb3e20bdfbff16427151dbc0c27c29866eb9cdd39c226', 2);
+INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_role_id) VALUES ('admin','jésus','christ','15ad61d711ecf80166a3e2a1226e18d813cb71f7d7ce25f090c27383a74946a2883ef22dd1b4a7896117fc0e9ca8a0413a6620fdfb529a656ef43bccfb22ca6d', 1);
 
 
-CREATE TABLE proposition
+
+
+CREATE TABLE webapp.proposition
 (
 	pro_id SERIAL CONSTRAINT pk_pro_id PRIMARY KEY,
 	pro_texte VARCHAR(100)
 );
 
 
-INSERT INTO proposition (pro_texte) VALUES ('oui');
-INSERT INTO proposition (pro_texte) VALUES ('non');
-INSERT INTO proposition (pro_texte) VALUES ('Je ne sais pas mais je réponds oui');
-INSERT INTO proposition (pro_texte) VALUES ('Je n''ai pas d''avis sur la question');
+INSERT INTO webapp.proposition (pro_texte) VALUES ('oui');
+INSERT INTO webapp.proposition (pro_texte) VALUES ('non');
+INSERT INTO webapp.proposition (pro_texte) VALUES ('Je ne sais pas mais je réponds oui');
+INSERT INTO webapp.proposition (pro_texte) VALUES ('Je n''ai pas d''avis sur la question');
 
-CREATE TABLE repondre
+
+
+CREATE TABLE IF NOT EXISTS webapp.repondre
 (
-	reponse_utilisateur_id,
-	reponse_proposition_id,
-	CONSTRAINT pk_ag_rep_util_id_rep_pro_id PRIMARY KEY (rep_util_id, rep_pro_id),
-	CONSTRAINT fk_reponse_utilisateur_id FOREIGN KEY(reponse_utilisateur_id) REFERENCES utilisateur(util_id),
-	CONSTRAINT fk_reponse_proposition_id FOREIGN KEY(reponse_proposition_id) REFERENCES proposition(pro_id)
+	reponse_utilisateur_id INT,
+	reponse_proposition_id INT,
+	CONSTRAINT pk_ag_rep_util_id_rep_pro_id PRIMARY KEY (reponse_utilisateur_id, reponse_proposition_id),
+	CONSTRAINT fk_reponse_utilisateur_id FOREIGN KEY(reponse_utilisateur_id) REFERENCES webapp.utilisateur(util_id),
+	CONSTRAINT fk_reponse_proposition_id FOREIGN KEY(reponse_proposition_id) REFERENCES webapp.proposition(pro_id)
 );
 
 
 --***********INSERTION TABLE repondre******************************************
 
-INSERT INTO repondre (reponse_utilisateur_id,reponse_proposition_id) VALUES (1, 1);
-INSERT INTO repondre (reponse_utilisateur_id,reponse_proposition_id) VALUES (1, 2);
+INSERT INTO webapp.repondre (reponse_utilisateur_id,reponse_proposition_id) VALUES (1, 1);
+INSERT INTO webapp.repondre (reponse_utilisateur_id,reponse_proposition_id) VALUES (1, 2);
 
 
-CREATE TABLE statut
+
+
+
+CREATE TABLE IF NOT EXISTS webapp.statut
 (
 	sta_id SERIAL CONSTRAINT pk_sta_id PRIMARY KEY,
 	sta_nom VARCHAR(100)
 );
 
 --***********INSERTION TABLE statut******************************************
-INSERT INTO statut (sta_nom) VALUES ('à ouvrir');
-INSERT INTO statut (sta_nom) VALUES ('en cours');
-INSERT INTO statut (sta_nom) VALUES ('fermé');
+INSERT INTO webapp.statut (sta_nom) VALUES ('à ouvrir');
+INSERT INTO webapp.statut (sta_nom) VALUES ('en cours');
+INSERT INTO webapp.statut (sta_nom) VALUES ('fermé');
 
 
-CREATE TABLE sondage
+
+
+
+CREATE TABLE IF NOT EXISTS webapp.sondage
 (
 	son_id SERIAL CONSTRAINT pk_son_id PRIMARY KEY,
 	son_theme VARCHAR(100),
 	son_texte VARCHAR(100),
-	son_statut_id VARCHAR(100),
-	CONSTRAINT fk_son_statut_id FOREIGN KEY(son_statut_id) REFERENCES statut(sta_id)
+	son_statut_id INT,
+	CONSTRAINT fk_son_statut_id FOREIGN KEY(son_statut_id) REFERENCES webapp.statut(sta_id)
 );
 
---***********INSERTION TABLE statut******************************************
-INSERT INTO sondage (son_theme, son_texte, son_statut_id) VALUES ('education','L''éductation nationnale','1');
-
-
-
 --***********INSERTION TABLE sondage******************************************
-INSERT INTO role (sta_nom) VALUES ('à ouvrir');
-INSERT INTO role (sta_nom) VALUES ('en cours');
-INSERT INTO role (sta_nom) VALUES ('fermé');
+INSERT INTO webapp.sondage (son_theme, son_texte, son_statut_id) VALUES ('education','L''éductation nationnale','1');
 
 
-CREATE TABLE question
+
+
+
+CREATE TABLE IF NOT EXISTS webapp.question
 (
 	ques_id SERIAL CONSTRAINT pk_ques_id PRIMARY KEY,
 	ques_texte VARCHAR(200),
 	ques_sondage_id INT,
-	CONSTRAINT fk_ques_sondage_id FOREIGN KEY(ques_sondage_id) REFERENCES sondage(son_id)
+	CONSTRAINT fk_ques_sondage_id FOREIGN KEY(ques_sondage_id) REFERENCES webapp.sondage(son_id)
 );
 
 --***********INSERTION TABLE question******************************************
-INSERT INTO sondage (ques_texte, ques_sondage_id) VALUES ('Penser vous que la qualité de l''enseignement à baissé depuis l''année 1920', 1);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Penser vous que la qualité de l''enseignement à baissé depuis l''année 1920', 1);
 
-CREATE TABLE questionProposition
+
+
+
+CREATE TABLE IF NOT EXISTS webapp.questionProposition
 (
 	quepro_question_id INT,
 	quepro_propostion_id INT,
-	quepro_score INT,
+	quepro_nombre_votants INT DEFAULT 0,
 	CONSTRAINT pk_ag_quepro_question_id_quepro_propostion_id PRIMARY KEY (quepro_question_id, quepro_propostion_id),
-	CONSTRAINT fk_quepro_question_id FOREIGN KEY(quepro_question_id) REFERENCES question(ques_id)
-	CONSTRAINT fk_quepro_propostion_id FOREIGN KEY(quepro_propostion_id) REFERENCES question(ques_id)
+	CONSTRAINT fk_quepro_question_id FOREIGN KEY(quepro_question_id) REFERENCES webapp.question(ques_id),
+	CONSTRAINT fk_quepro_propostion_id FOREIGN KEY(quepro_propostion_id) REFERENCES webapp.proposition(pro_id)
 );
 
 --***********INSERTION TABLE questionProposition******************************************
-INSERT INTO questionProposition (quepro_question_id, quepro_propostion_id) VALUES (1, 1);
-INSERT INTO questionProposition (quepro_question_id, quepro_propostion_id) VALUES (1, 2);
-INSERT INTO questionProposition (quepro_question_id, quepro_propostion_id) VALUES (1, 3);
-INSERT INTO questionProposition (quepro_question_id, quepro_propostion_id) VALUES (1, 4);
+INSERT INTO webapp.questionProposition (quepro_question_id, quepro_propostion_id, quepro_nombre_votants) VALUES (1, 1,1);
+INSERT INTO webapp.questionProposition (quepro_question_id, quepro_propostion_id, quepro_nombre_votants) VALUES (1, 2,1);
+INSERT INTO webapp.questionProposition (quepro_question_id, quepro_propostion_id) VALUES (1, 3);
+INSERT INTO webapp.questionProposition (quepro_question_id, quepro_propostion_id) VALUES (1, 4);
+
+
+--***********Vues ******************************************
+CREATE OR REPLACE VIEW webapp.authentification (id, identifiant, prenom, nom, pass, role) AS
+	SELECT u.util_id, u.util_identifiant, u.util_prenom, u.util_nom, u.util_pass, r.rol_nom
+	FROM webapp.utilisateur u, webapp.role r
+	WHERE u.util_role_id = r.rol_id;
+
+CREATE OR REPLACE VIEW webapp.authentification_insertion (id, token) AS
+	SELECT util_id, util_session_token 
+	FROM webapp.utilisateur;
+
+CREATE OR REPLACE VIEW webapp.resultat (identifiant_sondage, theme_sondage, presentation_sondage, identifiant_question, texte_question, identifant_proposition, texte_proposition, nombre_votants, pourcentage) AS
+	SELECT s.son_id, s.son_theme, s.son_texte, q.ques_id, q.ques_texte, p.pro_id, p.pro_texte, qp.quepro_nombre_votants, 100*qp.quepro_nombre_votants/(sum(qp.quepro_nombre_votants) OVER (PARTITION BY qp.quepro_question_id))
+	FROM webapp.sondage s, webapp.question q, webapp.questionProposition qp, webapp.proposition p
+	WHERE s.son_id = q.ques_sondage_id
+	AND q.ques_id = qp.quepro_question_id 
+	AND qp.quepro_propostion_id = p. pro_id;
+
+
+--********* Role ***********************************************
+DROP ROLE IF EXISTS webappbd_auth;
+CREATE ROLE webappbd_auth  LOGIN  ENCRYPTED PASSWORD 'X4fzk78A';
+
+GRANT CONNECT ON DATABASE webappbd TO webappbd_auth;
+GRANT USAGE ON SCHEMA webapp TO webappbd_auth;
+GRANT SELECT (id, identifiant, pass, role) ON TABLE webapp.authentification TO webappbd_auth;
+GRANT SELECT,UPDATE (id, token) ON TABLE webapp.authentification_insertion TO webappbd_auth;
+--GRANT SELECT ON TABLE webapp.utilisateur TO webappbd_auth; 
+
+DROP ROLE IF EXISTS webappbd_update;
+--CREATE ROLE webappbd_update  LOGIN  ENCRYPTED PASSWORD 'vS6yKz64';
+--GRANT USAGE ON SCHEMA webapp TO webappbd_auth;
+
 
 
