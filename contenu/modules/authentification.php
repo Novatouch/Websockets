@@ -43,7 +43,7 @@ else
         {
 
             // regarde le nombre de résultat
-            $nbligne =pg_numrows($resultat);
+            $nbligne = pg_numrows($resultat);
             if ($nbligne == 0)
             {
                 $message['message']="echec";
