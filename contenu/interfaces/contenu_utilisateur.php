@@ -102,12 +102,6 @@
         </div><!--/span-->
       </div><!--/row-->
 
-      <hr>
-
-      <footer>
-        <p>&copy; Philippe Gautier | Rémi Maison 2014</p>
-      </footer>
-
     </div><!--/.container-->
 
 
