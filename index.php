@@ -7,6 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="shortcut icon" href="assets/ico/favicon.ico">
+    <script type="text/javascript" src="js/authentification.js"></script>
 
     <title>Sondages STRI | Connexion</title>
 
@@ -43,17 +44,36 @@
 
     <div class="container">
     <div class="jumbotron">
-        <center>
-        <h2>Authentification</h2>
+    	<div id="formulaireConnexion">
+        	<center>
+        	<h2>Authentification</h2>
+        	<br />
+        	<p class="lead">
+            <form action="index.php" method="post">
+            	<label for="login">Login :</label><input type="text" id="login" name="login" /><br /><br />
+            	<label for="mdp">Mot de passe :</label><input type="password" id="mdp" name="mdp" /><br /><br />
+                <input type="submit" value="Connexion" class="btn btn-lg btn-success" />
+            </form>
+        	</p>
+        	<!--<p><a class="btn btn-lg btn-success" href="accueil.php" role="button">Connexion</a></p>-->
+        	</center>
+        </div>
+	</div>
         <br />
-        <p class="lead">
-            <label for="login">Login :</label><input type="text" id="login" /><br /><br />
-            <label for="mdp">Mot de passe :</label><input type="password" id="mdp" /><br />
-        </p>
-        <p><a class="btn btn-lg btn-success" href="#" role="button">Connexion</a></p>
-        </center>
-    </div>
-
+        <div id="affichageUtilisateur">
+		<?php
+			if (isset($_POST['login']) && isset($_POST['mdp']) && $_POST['login'] == 'maison' && $_POST['mdp'] == 'maison')
+			{
+				include("contenu/interfaces/menu_utilisateur.php");
+				include("contenu/interfaces/contenu_utilisateur.php");
+			}
+			else if (isset($_POST['login']) && isset($_POST['mdp']) && $_POST['login'] == 'admin' && $_POST['mdp'] == 'admin')
+			{
+				include("contenu/interfaces/menu_administrateur.php");
+				include("contenu/interfaces/contenu_administrateur.php");
+			}
+		?>
+		</div>
       <hr>
 
       <footer>
@@ -72,4 +92,3 @@
     <script src="offcanvas.js"></script>
   </body>
 </html>
-
