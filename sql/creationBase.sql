@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS webapp.utilisateur
 
 
 --***********INSERTION TABLE utilisateurs******************************************
-INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_role_id) VALUES ('philippe','philippe','gautier','54c4e215116d756def14fddeb8ce375130d226881b3a9469940c1a247fdae38d893162094d33535d328f7dbf1498cce6ce2c0c00e65723722ce783e72494ba0a', 2);
+INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_session_token, util_role_id) VALUES ('philippe','philippe','gautier','54c4e215116d756def14fddeb8ce375130d226881b3a9469940c1a247fdae38d893162094d33535d328f7dbf1498cce6ce2c0c00e65723722ce783e72494ba0a', '6e7ce41be600319bad04d877facc33a4c5dba6ef5a51e73d82544cd9eda0da6e', 2);
 INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_role_id) VALUES ('rémi','rémi','maison','ef0fb9eeaab088c45cbf18ccb3d1e7695a8ed022f6bd0b218d4df7cee6e8ed90bb4723d11c6a5c6bf49eb3e20bdfbff16427151dbc0c27c29866eb9cdd39c226', 2);
 INSERT INTO webapp.utilisateur (util_identifiant, util_prenom, util_nom, util_pass, util_role_id) VALUES ('admin','jésus','christ','15ad61d711ecf80166a3e2a1226e18d813cb71f7d7ce25f090c27383a74946a2883ef22dd1b4a7896117fc0e9ca8a0413a6620fdfb529a656ef43bccfb22ca6d', 1);
 
@@ -120,11 +120,13 @@ CREATE TABLE IF NOT EXISTS webapp.sondage
 	son_theme VARCHAR(100),
 	son_texte VARCHAR(100),
 	son_statut_id INT,
+    sond_date_debut TIME with time zone,
+    sond_date_fin TIME with time zone,
 	CONSTRAINT fk_son_statut_id FOREIGN KEY(son_statut_id) REFERENCES webapp.statut(sta_id)
 );
 
 --***********INSERTION TABLE sondage******************************************
-INSERT INTO webapp.sondage (son_theme, son_texte, son_statut_id) VALUES ('education','L''éductation nationnale','1');
+INSERT INTO webapp.sondage (son_theme, son_texte, son_statut_id) VALUES ('education','L''éductation nationnale','2');
 
 
 
@@ -162,14 +164,23 @@ INSERT INTO webapp.questionProposition (quepro_question_id, quepro_propostion_id
 
 
 --***********Vues ******************************************
-CREATE OR REPLACE VIEW webapp.authentification (id, identifiant, prenom, nom, pass, role) AS
-	SELECT u.util_id, u.util_identifiant, u.util_prenom, u.util_nom, u.util_pass, r.rol_nom
+CREATE OR REPLACE VIEW webapp.authentification (id, identifiant, prenom, nom, pass, token , role) AS
+	SELECT u.util_id, u.util_identifiant, u.util_prenom, u.util_nom, u.util_pass, u.util_session_token, r.rol_nom
 	FROM webapp.utilisateur u, webapp.role r
 	WHERE u.util_role_id = r.rol_id;
 
 CREATE OR REPLACE VIEW webapp.authentification_insertion (id, token) AS
 	SELECT util_id, util_session_token 
 	FROM webapp.utilisateur;
+
+CREATE OR REPLACE VIEW webapp.vue_sondage (json) AS
+SELECT array_to_json(array_agg(row_to_json(t))) AS json
+FROM (
+    SELECT so.son_id AS id , so.son_theme AS theme
+	FROM webapp.sondage so, webapp.statut st
+    WHERE so.son_statut_id = st.sta_id
+) t;
+
 
 CREATE OR REPLACE VIEW webapp.resultat (identifiant_sondage, theme_sondage, presentation_sondage, identifiant_question, texte_question, identifant_proposition, texte_proposition, nombre_votants, pourcentage) AS
 	SELECT s.son_id, s.son_theme, s.son_texte, q.ques_id, q.ques_texte, p.pro_id, p.pro_texte, qp.quepro_nombre_votants, 100*qp.quepro_nombre_votants/(sum(qp.quepro_nombre_votants) OVER (PARTITION BY qp.quepro_question_id))
@@ -190,7 +201,12 @@ GRANT SELECT,UPDATE (id, token) ON TABLE webapp.authentification_insertion TO we
 --GRANT SELECT ON TABLE webapp.utilisateur TO webappbd_auth; 
 
 DROP ROLE IF EXISTS webappbd_update;
---CREATE ROLE webappbd_update  LOGIN  ENCRYPTED PASSWORD 'vS6yKz64';
+CREATE ROLE webappbd_update  LOGIN  ENCRYPTED PASSWORD 'vS6yKz64';
+GRANT CONNECT ON DATABASE webappbd TO webappbd_update;
+GRANT USAGE ON SCHEMA webapp TO webappbd_update;
+GRANT SELECT (id, token, role) ON TABLE webapp.authentification TO webappbd_update;
+GRANT SELECT,UPDATE (id, token) ON TABLE webapp.authentification_insertion TO webappbd_update;
+GRANT SELECT ON TABLE webapp.vue_sondage TO webappbd_update;
 --GRANT USAGE ON SCHEMA webapp TO webappbd_auth;
 
 
