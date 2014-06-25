@@ -1,5 +1,8 @@
 <?php
+<<<<<<< HEAD
 session_start();
+=======
+>>>>>>> 11a6b3546033b5f6946b437f568b5f187943c823
 
 include_once("fonction.php");
 include_once("../config/config.php");
@@ -44,7 +47,11 @@ else
         {
 
             // regarde le nombre de résultat
+<<<<<<< HEAD
             $nbligne = pg_numrows($resultat);
+=======
+            $nbligne =pg_numrows($resultat);
+>>>>>>> 11a6b3546033b5f6946b437f568b5f187943c823
             if ($nbligne == 0)
             {
                 $message['message']="echec";
