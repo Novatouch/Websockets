@@ -177,6 +177,37 @@ WHERE s.son_id = q.ques_sondage_id
 AND q.ques_id = p.pro_question_id;
 
 
+-- recuperation dans un array json des sondages
+CREATE OR REPLACE VIEW webapp.liste_sondage (json) AS
+SELECT row_to_json(t) AS json
+FROM(
+    -- recupération id, theme et presentation sondage
+    SELECT son_id as id, son_theme AS theme, son_presentation AS presentation, sta_nom AS statut,
+    (
+        SELECT array_to_json(array_agg(row_to_json(u)))
+        FROM(
+            -- recuperation des questions
+            SELECT ques_id, ques_texte,
+            (
+                SELECT array_to_json(array_agg(row_to_json(v)))
+                FROM(
+
+                    --recuperation des propositions
+                    SELECT pro_id,pro_texte,pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
+                    FROM webapp.proposition
+                    WHERE pro_question_id=webapp.question.ques_id
+                ) v
+            ) AS propositions
+            FROM webapp.question
+            WHERE ques_sondage_id=webapp.sondage.son_id
+        ) u
+    ) AS questions
+    FROM webapp.sondage, webapp.statut
+    WHERE son_statut_id=sta_id
+) t;
+
+
+
 ----********* TRIGGER ***********************************************
 CREATE OR REPLACE FUNCTION mise_a_jour_score() RETURNS trigger AS $$
 BEGIN
