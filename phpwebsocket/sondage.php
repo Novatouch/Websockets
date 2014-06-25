@@ -17,11 +17,13 @@ class ChatBot extends WebSocket{
 
         // decodage du token et de l'id de l'utilisateur
         $msg_decoded=json_decode($msg,true);
+        
+        echo $msg;
 
         if (!isset($msg_decoded["id"]) || !isset($msg_decoded["token"]) || !isset($msg_decoded["requete"]))
         {
             unset($message);
-            $message['requete']=$requete;
+            $message['requete']="inconnue";
             $message['statut']="echoue";
             $message['debug']="Requête malformée envoyée par le client";
 
@@ -35,11 +37,12 @@ class ChatBot extends WebSocket{
 
             // connexion BD
             $chaine_connexion = "host=$host port=$port dbname=$dbname user=$userbd password=$password options='--client_encoding=UTF8'";
-            echo $chaine_connexion;
+            
             $bd_connexion = pg_connect($chaine_connexion);
 
             if($bd_connexion == FALSE)
             {
+                unset($message);
                 $message['requete']=$requete;
                 $message['statut']="echoue";
                 $message['debug']="Connexion à la base de donnée impossible";
@@ -56,6 +59,7 @@ class ChatBot extends WebSocket{
                 // Si la requête a échouée redirection
                 if($resultat == FALSE)
                 {
+                    unset($message);
                     $message['requete']=$requete;
                     $message['statut']="echoue";
                     $message['debug']="Une requête d'authentification auprès du serveur de base de donnée à échouée";
@@ -68,6 +72,7 @@ class ChatBot extends WebSocket{
                     $nbligne =pg_numrows($resultat);
                     if ($nbligne == 0)
                     {
+                        unset($message);
                         $message['requete']=$requete;
                         $message['statut']="echoue";
                         $message['debug']="L'utilisateur n'est pas authentifié";
@@ -85,6 +90,7 @@ class ChatBot extends WebSocket{
                         // verification de l'existance de l'utilisateur
                         if ($token != $token_bd)
                         {
+                            unset($message);
                             $message['requete']=$requete;
                             $message['statut']="echoue";
                             $message['debug']="L'utilisateur n'est pas authentifié";
@@ -102,6 +108,9 @@ class ChatBot extends WebSocket{
                                 switch($requete){
                                     case ("lister_question_reponse_sondage") :
                                     
+                                    if(!isset($msg_decoded["id_sondage"])){
+                                        $verification="nok";
+                                    }
                                     
                                     // verification de la présence de la variable contenant l'identifiant du sondage
                                     break;
@@ -110,6 +119,12 @@ class ChatBot extends WebSocket{
                                 // creation requete SQL
                                 if($verification != "ok")
                                 {
+                                    unset($message);
+                                    $message['requete']=$requete;
+                                    $message['statut']="echoue";
+                                    $message['debug']="Les données fournis par l'utilisateur étaient éronnés";
+
+                                    $this->send($user->socket,json_encode($message)); 
                                 }
                                 else
                                 {
@@ -117,10 +132,12 @@ class ChatBot extends WebSocket{
 
                                     switch($requete){
                                         case ("lister_sondage_en_cours") :
-                                        $requete_sql = "SELECT json FROM webapp.vue_sondage;";
+                                            $requete_sql = "SELECT json FROM webapp.vue_sondage;";
                                         break;
                                         case ("lister_question_reponse_sondage") :
-
+                                        
+                                            $id_sondage=pg_escape_string($msg_decoded["id_sondage"]);
+                                            $requete_sql = "SELECT lister_sondage_id('$id_sondage') AS json;";
                                         break;
                                     }
 

@@ -207,8 +207,66 @@ FROM(
 ) t;
 
 
+----********* FUNCTION ***********************************************
 
-----********* TRIGGER ***********************************************
+
+create or replace function lister_sondage_id(_id INT)
+returns varchar as $BODY$
+declare 
+stats varchar;
+enregistrement_json record;
+myrec record;
+begin
+
+SELECT row_to_json(t) AS json INTO enregistrement_json
+FROM(
+    -- recupération id, theme et presentation sondage
+    SELECT son_id as id, son_theme AS theme, son_presentation AS presentation, sta_nom AS statut,
+    (
+        SELECT array_to_json(array_agg(row_to_json(u)))
+        FROM(
+            -- recuperation des questions
+            SELECT ques_id, ques_texte,
+            (
+                SELECT array_to_json(array_agg(row_to_json(v)))
+                FROM(
+
+                    --recuperation des propositions
+                    SELECT pro_id,pro_texte,pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
+                    FROM webapp.proposition
+                    WHERE pro_question_id=webapp.question.ques_id
+                ) v
+            ) AS propositions
+            FROM webapp.question
+            WHERE ques_sondage_id=webapp.sondage.son_id
+        ) u
+    ) AS questions
+    FROM webapp.sondage, webapp.statut
+    WHERE son_statut_id=sta_id
+    AND son_id=_id
+) t;
+-- rechercher dans la table utilisateurs si l'utilisateur existe
+SELECT q.ques_sondage_id INTO myrec  
+FROM webapp.repondre r, webapp.question q
+WHERE q.ques_id=r.rep_question_id
+AND r.rep_utilisateur_id=1;
+
+-- test si un résultat à été trouvé
+IF FOUND THEN
+-- la procédure retourne une erreur
+stats := '{"participer":"oui","sondage": [' || enregistrement_json.json ;
+
+ELSE 
+stats := '{"participer":"non","sondage": [' || enregistrement_json.json ;
+END IF;
+stats := stats || ']}';
+
+return stats;
+end;
+$BODY$ language plpgsql SECURITY DEFINER;
+
+
+----********* TRIGGER  FUNCTION ***********************************************
 CREATE OR REPLACE FUNCTION mise_a_jour_score() RETURNS trigger AS $$
 BEGIN
     UPDATE webapp.proposition SET pro_nombre_votants=pro_nombre_votants+1
@@ -245,6 +303,7 @@ GRANT USAGE ON SCHEMA webapp TO webappbd_update;
 GRANT SELECT (id, token, role) ON TABLE webapp.authentification TO webappbd_update;
 GRANT SELECT,UPDATE (id, token) ON TABLE webapp.authentification_insertion TO webappbd_update;
 GRANT SELECT ON TABLE webapp.vue_sondage TO webappbd_update;
+GRANT EXECUTE ON FUNCTION webapp.lister_sondage_id TO webappbd_update;
 --GRANT USAGE ON SCHEMA webapp TO webappbd_auth;
 
 
