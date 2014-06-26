@@ -15,9 +15,9 @@ $(document).ready(function() {
             var socket;
             var id_utilisateur='<?php if(isset($_SESSION['id'])){ echo $_SESSION['id'];} ?>';
             var token_utilisateur='<?php if(isset($_SESSION['token'])){ echo $_SESSION['token'];} ?>';
+   
 
-
-            var host = "ws://195.220.53.88:12345";
+            var host = "<?php echo $host_websocket; ?>";
 
             try{
                 var socket = new WebSocket(host);
@@ -58,9 +58,11 @@ $(document).ready(function() {
 
                             for( var j=0 ; j < donnees.data.length; j++){
 
+                                var id_sondage = donnees['data'][j].id;
+                                var theme_sondage = donnees['data'][j].theme;
+                            
                                 if(j == 0){
-                                    var id_sondage = donnees['data'][j].id;
-                                    var theme_sondage = donnees['data'][j].theme;
+                                    
                                     $("#liste_sondage").append('<a id=' + id_sondage +' href="#" class="list-group-item active">' + theme_sondage +'</a>');
                                 } else {
                                     $("#liste_sondage").append('<a id=' + id_sondage +' href="#" class="list-group-item">' + theme_sondage +'</a>');
@@ -70,26 +72,32 @@ $(document).ready(function() {
                         }else if(donnees.requete == "lister_question_reponse_sondage"){
 
 
-                            //$("#choixReponse").fadeOut( "slow" );
-                            //$("#resultatSondage").fadeOut( "slow" );
+                            $("#choixReponse").fadeOut( "slow" );
+                            $("#resultatSondage").fadeOut( "slow" );
 
                             // recup
-                            //$("#choixReponse").empty();
-                            //$("#resultatSondage").empty();
+                            $("#choixReponse").empty();
+                            $("#resultatSondage").empty();
 
                             // récupération infos sondages
                             var id_sondage = donnees['data']['sondage'][0].id;
                             var theme_sondage = donnees['data']['sondage'][0].theme;
 
-                            // affichage titre sondage
-                            $("#resultatSondage").append('<h2 id=' + id_sondage +' >'+ theme_sondage +'</h2>')
+                            
 
 
                             // récupération de la variable permettant de déterminer si l'utilisateur à déjà répondu au questionnaire
                             var participation = donnees['data']['participer'];
 
                             if(participation == "oui"){
+                            
+                                // affichage titre sondage
+                                $("#resultatSondage").append('<h2 id=' + id_sondage +' >'+ theme_sondage +'</h2>');
+                            
+                            
+                            
                                 // affichage des résultats
+                                
 
                                 // parcours de la liste des questions
                                 for( var i=0 ; i < donnees['data']['sondage'][0]['questions'].length; i++){
@@ -97,7 +105,7 @@ $(document).ready(function() {
                                     // affichage des question
                                     var texte_question = donnees['data']['sondage'][0]['questions'][i]['ques_texte'];
 
-                                    $("<h3>" + texte_question + "</h3>").appendTo( $("#resultatSondage") );
+                                    $("<h4>" + texte_question + "</h4>").appendTo( $("#resultatSondage") );
 
                                     for( var j=0 ; j < donnees['data']['sondage'][0]['questions'][i]['propositions'].length; j++){
 
@@ -122,6 +130,9 @@ $(document).ready(function() {
 
                             }else if(participation == "non"){
 
+                                // affichage titre sondage
+                                $("#choixReponse").append('<h2 id=' + id_sondage +' >'+ theme_sondage +'</h2>');
+
                                 // parcours de la liste des questions
                                 for( var i=0 ; i < donnees['data']['sondage'][0]['questions'].length; i++){
 
@@ -130,9 +141,9 @@ $(document).ready(function() {
                                     var id_question = donnees['data']['sondage'][0]['questions'][i]['ques_id'];
 
                                     // affichage de la question
-                                    $("<h3"+ id_question +">" + texte_question + "</h3>").appendTo( $("#resultatSondage") );
+                                    $("<h4 id="+ id_question +" >" + texte_question + "</h4>").appendTo( $("#choixReponse") );
 
-                                    $("<p>").appendTo( $("#resultatSondage") );
+                                   // $("<p>").appendTo( $("#choixReponse") );
 
                                     for( var j=0 ; j < donnees['data']['sondage'][0]['questions'][i]['propositions'].length; j++){
 
@@ -140,13 +151,13 @@ $(document).ready(function() {
                                         var id_proposition = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['pro_id']; 
 
                                         // affichage des propositions
-                                        $('<input id='+ id_proposition + ' type="radio" name="choix" /> <label>'+ texte_proposition +'</label><br />').appendTo( $("#resultatSondage") );
+                                        $('<input id='+ id_proposition + ' type="radio" name="'+ id_question +'" /> <label>'+ texte_proposition +'</label><br />').appendTo( $("#choixReponse") );
                                     }
 
-                                    $("</p>").appendTo( $("#resultatSondage") );
+                                    //$("</p>").appendTo( $("#choixReponse") );
                                 }
-
-                                $('<p><a class="btn btn-primary btn-lg" role="button" href="#">Soumettre >></a></p>').appendTo( $("#resultatSondage") );
+                                $('<br/>').appendTo( $("#choixReponse") );
+                                $('<p><a class="btn btn-primary btn-lg" role="button" href="#">Soumettre</a></p>').appendTo( $("#choixReponse") );
 
                                 // affichage du div resultatSondage
                                 $("#choixReponse").fadeIn( "slow" );

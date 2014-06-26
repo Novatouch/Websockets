@@ -137,7 +137,7 @@ class ChatBot extends WebSocket{
                                         case ("lister_question_reponse_sondage") :
                                         
                                             $id_sondage=pg_escape_string($msg_decoded["id_sondage"]);
-                                            $requete_sql = "SELECT lister_sondage_id('$id_sondage') AS json;";
+                                            $requete_sql = "SELECT lister_sondage_id('$id_sondage','$id') AS json;";
                                         break;
                                     }
 

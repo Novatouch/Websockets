@@ -1,3 +1,4 @@
+<?php include_once("contenu/config/config.php"); ?>
 <!DOCTYPE html>
 <html lang="fr">
     <head>

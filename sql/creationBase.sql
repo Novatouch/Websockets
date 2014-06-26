@@ -92,7 +92,8 @@ CREATE TABLE IF NOT EXISTS webapp.sondage
 );
 
 --***********INSERTION TABLE sondage******************************************
-INSERT INTO webapp.sondage (son_theme, son_presentation, son_statut_id) VALUES ('education','L''éductation nationnale','2');
+INSERT INTO webapp.sondage (son_theme, son_presentation, son_statut_id) VALUES ('Education','L''éductation nationnale','2');
+INSERT INTO webapp.sondage (son_theme, son_presentation, son_statut_id) VALUES ('Football','La coupe du monde','2');
 
 
 
@@ -108,6 +109,9 @@ CREATE TABLE IF NOT EXISTS webapp.question
 
 --***********INSERTION TABLE question******************************************
 INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Penser vous que la qualité de l''enseignement à baissé depuis l''année 1920', 1);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Avez vous déjà envisager d''envoyer votre enfant en pension', 1);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('La France à t''elle une chance de gagner la coupe du monde ? ', 2);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Quelles équipes joueront la finale ?', 2);
 
 CREATE TABLE webapp.proposition
 (
@@ -123,6 +127,17 @@ INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) 
 INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) VALUES ('non', 1, 1);
 INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('Je ne sais pas mais je réponds oui', 1);
 INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('Je n''ai pas d''avis sur la question', 1);
+
+INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) VALUES ('oui', 2, 1);
+INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) VALUES ('non', 2, 1);
+
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('oui', 3);
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('non', 3);
+
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('france - brésil', 4);
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('france - argentine', 4);
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('brésil - argentine', 4);
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('allemagne - nigéria', 4);
 
 
 
@@ -143,6 +158,8 @@ CREATE TABLE IF NOT EXISTS webapp.repondre
 INSERT INTO webapp.repondre (rep_utilisateur_id, rep_question_id, rep_proposition_id) VALUES (1, 1, 1);
 INSERT INTO webapp.repondre (rep_utilisateur_id, rep_question_id, rep_proposition_id) VALUES (2, 1, 2);
 
+INSERT INTO webapp.repondre (rep_utilisateur_id, rep_question_id, rep_proposition_id) VALUES (1, 2, 1);
+INSERT INTO webapp.repondre (rep_utilisateur_id, rep_question_id, rep_proposition_id) VALUES (2, 2, 2);
 
 
 
@@ -210,46 +227,95 @@ FROM(
 ----********* FUNCTION ***********************************************
 
 
-create or replace function lister_sondage_id(_id INT)
+create or replace function lister_sondage_id(_id_sondage INT, _id_utilisateur INT)
 returns varchar as $BODY$
 declare
 stats varchar;
 enregistrement_json record;
 myrec record;
+nbparticipants INT;
 begin
 
-SELECT row_to_json(t) AS json INTO enregistrement_json
-FROM(
-    -- recupération id, theme et presentation sondage
-    SELECT son_id as id, son_theme AS theme, son_presentation AS presentation, sta_nom AS statut,
-    (
-        SELECT array_to_json(array_agg(row_to_json(u)))
-        FROM(
-            -- recuperation des questions
-            SELECT ques_id, ques_texte,
-            (
-                SELECT array_to_json(array_agg(row_to_json(v)))
-                FROM(
 
-                    --recuperation des propositions
-                    SELECT pro_id,pro_texte,pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
-                    FROM webapp.proposition
-                    WHERE pro_question_id=webapp.question.ques_id
-                ) v
-            ) AS propositions
-            FROM webapp.question
-            WHERE ques_sondage_id=webapp.sondage.son_id
-        ) u
-    ) AS questions
-    FROM webapp.sondage, webapp.statut
-    WHERE son_statut_id=sta_id
-    AND son_id=_id
-) t;
+-- détermine si il y a eu des votes pour le sondage
+SELECT sum(pro.pro_nombre_votants) INTO nbparticipants
+FROM webapp.sondage so, webapp.question ques, webapp.proposition pro
+WHERE so.son_id=ques.ques_sondage_id
+AND ques.ques_id=pro.pro_question_id
+AND so.son_id=_id_sondage;
+
+IF nbparticipants > 0 THEN
+    -- des participants ont votés
+    SELECT row_to_json(t) AS json INTO enregistrement_json
+    FROM(
+        -- recupération id, theme et presentation sondage
+        SELECT son_id as id, son_theme AS theme, son_presentation AS presentation, sta_nom AS statut,
+        (
+            SELECT array_to_json(array_agg(row_to_json(u)))
+            FROM(
+                -- recuperation des questions
+                SELECT ques_id, ques_texte,
+                (
+                    SELECT array_to_json(array_agg(row_to_json(v)))
+                    FROM(
+
+                        --recuperation des propositions
+                        SELECT pro_id,pro_texte,pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
+                        FROM webapp.proposition
+                        WHERE pro_question_id=webapp.question.ques_id
+                    ) v
+                ) AS propositions
+                FROM webapp.question
+                WHERE ques_sondage_id=webapp.sondage.son_id
+            ) u
+        ) AS questions
+        FROM webapp.sondage, webapp.statut
+        WHERE son_statut_id=sta_id
+        AND son_id=_id_sondage
+    ) t;
+
+ELSE
+    -- aucun participant n'a voté
+    SELECT row_to_json(t) AS json INTO enregistrement_json
+    FROM(
+        -- recupération id, theme et presentation sondage
+        SELECT son_id as id, son_theme AS theme, son_presentation AS presentation, sta_nom AS statut,
+        (
+            SELECT array_to_json(array_agg(row_to_json(u)))
+            FROM(
+                -- recuperation des questions
+                SELECT ques_id, ques_texte,
+                (
+                    SELECT array_to_json(array_agg(row_to_json(v)))
+                    FROM(
+
+                        --recuperation des propositions
+                        SELECT pro_id,pro_texte,pro_nombre_votants, 0 AS score
+                        FROM webapp.proposition
+                        WHERE pro_question_id=webapp.question.ques_id
+                    ) v
+                ) AS propositions
+                FROM webapp.question
+                WHERE ques_sondage_id=webapp.sondage.son_id
+            ) u
+        ) AS questions
+        FROM webapp.sondage, webapp.statut
+        WHERE son_statut_id=sta_id
+        AND son_id=_id_sondage
+    ) t;
+    
+END IF;
+
+
 -- rechercher dans la table utilisateurs si l'utilisateur existe
 SELECT q.ques_sondage_id INTO myrec
-FROM webapp.repondre r, webapp.question q
-WHERE q.ques_id=r.rep_question_id
-AND r.rep_utilisateur_id=1;
+FROM webapp.repondre r, webapp.question q, webapp.sondage s
+
+WHERE s.son_id=q.ques_sondage_id
+AND q.ques_id=r.rep_question_id
+AND r.rep_utilisateur_id=_id_utilisateur
+AND s.son_id=_id_sondage;
+
 
 -- test si un résultat à été trouvé
 IF FOUND THEN
@@ -303,5 +369,5 @@ GRANT USAGE ON SCHEMA webapp TO webappbd_update;
 GRANT SELECT (id, token, role) ON TABLE webapp.authentification TO webappbd_update;
 GRANT SELECT,UPDATE (id, token) ON TABLE webapp.authentification_insertion TO webappbd_update;
 GRANT SELECT ON TABLE webapp.vue_sondage TO webappbd_update;
-GRANT EXECUTE ON FUNCTION lister_sondage_id(INT) TO webappbd_update;
+GRANT EXECUTE ON FUNCTION lister_sondage_id(INT,INT) TO webappbd_update;
 --GRANT USAGE ON SCHEMA webapp TO webappbd_auth;
