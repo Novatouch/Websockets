@@ -17,7 +17,7 @@ $(document).ready(function() {
             var token_utilisateur='<?php if(isset($_SESSION['token'])){ echo $_SESSION['token'];} ?>';
 
 
-            var host = "ws://192.168.42.38:12345";
+            var host = "ws://195.220.53.88:12345";
 
             try{
                 var socket = new WebSocket(host);
@@ -77,17 +77,19 @@ $(document).ready(function() {
                             //$("#choixReponse").empty();
                             //$("#resultatSondage").empty();
 
+                            // récupération infos sondages
+                            var id_sondage = donnees['data']['sondage'][0].id;
+                            var theme_sondage = donnees['data']['sondage'][0].theme;
+
+                            // affichage titre sondage
+                            $("#resultatSondage").append('<h2 id=' + id_sondage +' >'+ theme_sondage +'</h2>')
+
+
                             // récupération de la variable permettant de déterminer si l'utilisateur à déjà répondu au questionnaire
                             var participation = donnees['data']['participer'];
 
                             if(participation == "oui"){
-
                                 // affichage des résultats
-                                var id_sondage = donnees['data']['sondage'][0].id;
-                                var theme_sondage = donnees['data']['sondage'][0].theme;
-
-                                // affichage titre sondage
-                                $("#resultatSondage").append('<h2 id=' + id_sondage +' >'+ theme_sondage +'</h2>')
 
                                 // parcours de la liste des questions
                                 for( var i=0 ; i < donnees['data']['sondage'][0]['questions'].length; i++){
@@ -120,22 +122,34 @@ $(document).ready(function() {
 
                             }else if(participation == "non"){
 
-                                // affichage du questionnaire
+                                // parcours de la liste des questions
+                                for( var i=0 ; i < donnees['data']['sondage'][0]['questions'].length; i++){
 
-                                /* <div id="1">
-                    <h3>Qui selon-vous va gagner la Coupe du monde 2014 ?</h3>
-                    <p>
-                    <form>
-                        <input type="radio" name="choix" /> <label for="bresil">Brésil</label><br />
-                        <input type="radio" name="choix" /> <label for="italie">Italie</label><br />
-                        <input type="radio" name="choix" /> <label for="france">France</label><br />
-                        <input type="radio" name="choix" /> <label for="allemagne">Allemagne</label><br />
-                        <input type="radio" name="choix" /> <label for="argentine">Argentine</label><br />
-                        <input type="radio" name="choix" /> <label for="autre">Autre</label><br />
-                    </form>
-                    </p>
-                    </div>
-                <p><a class="btn btn-primary btn-lg" role="button" href="#">Soumettre >></a></p>*/
+
+                                    var texte_question = donnees['data']['sondage'][0]['questions'][i]['ques_texte'];
+                                    var id_question = donnees['data']['sondage'][0]['questions'][i]['ques_id'];
+
+                                    // affichage de la question
+                                    $("<h3"+ id_question +">" + texte_question + "</h3>").appendTo( $("#resultatSondage") );
+
+                                    $("<p>").appendTo( $("#resultatSondage") );
+
+                                    for( var j=0 ; j < donnees['data']['sondage'][0]['questions'][i]['propositions'].length; j++){
+
+                                        var texte_proposition = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['pro_texte'];
+                                        var id_proposition = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['pro_id']; 
+
+                                        // affichage des propositions
+                                        $('<input id='+ id_proposition + ' type="radio" name="choix" /> <label>'+ texte_proposition +'</label><br />').appendTo( $("#resultatSondage") );
+                                    }
+
+                                    $("</p>").appendTo( $("#resultatSondage") );
+                                }
+
+                                $('<p><a class="btn btn-primary btn-lg" role="button" href="#">Soumettre >></a></p>').appendTo( $("#resultatSondage") );
+
+                                // affichage du div resultatSondage
+                                $("#choixReponse").fadeIn( "slow" );
 
                             } else {
                                 log("données manquante dans la réponse serveur");

@@ -6,11 +6,11 @@ $(document).ready(function(){
     // (Pour Mozilla < 11 avec version préfixée)
     if('MozWebSocket' in window) {
 
-      ws = new MozWebSocket("ws://192.168.42.38:12345");
+      ws = new MozWebSocket("ws://195.220.53.88:12345");
 
     } else if('WebSocket' in window) {
 
-      ws = new WebSocket("ws://192.168.42.38:12345");
+      ws = new WebSocket("ws://195.220.53.88:12345");
 
     }
 
