@@ -108,9 +108,9 @@ CREATE TABLE IF NOT EXISTS webapp.question
 );
 
 --***********INSERTION TABLE question******************************************
-INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Penser vous que la qualité de l''enseignement à baissé depuis l''année 1920', 1);
-INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Avez vous déjà envisager d''envoyer votre enfant en pension', 1);
-INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('La France à t''elle une chance de gagner la coupe du monde ? ', 2);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Penser vous que la qualité de l''enseignement a baissé depuis l''année 1920 ?', 1);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Avez vous déjà envisager d''envoyer votre enfant en pension ?', 1);
+INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('La France a t''elle une chance de gagner la coupe du monde ? ', 2);
 INSERT INTO webapp.question (ques_texte, ques_sondage_id) VALUES ('Quelles équipes joueront la finale ?', 2);
 
 CREATE TABLE webapp.proposition
@@ -125,7 +125,7 @@ CREATE TABLE webapp.proposition
 
 INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) VALUES ('oui', 1, 1);
 INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) VALUES ('non', 1, 1);
-INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('Je ne sais pas mais je réponds oui', 1);
+INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('Je ne sais pas, mais je réponds oui', 1);
 INSERT INTO webapp.proposition (pro_texte, pro_question_id) VALUES ('Je n''ai pas d''avis sur la question', 1);
 
 INSERT INTO webapp.proposition (pro_texte, pro_question_id, pro_nombre_votants) VALUES ('oui', 2, 1);

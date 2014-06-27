@@ -222,7 +222,7 @@ $(document).ready(function() {
                                         } else {
                                             var affichage_votants = 'votant';
                                         }
-                                        $('<div class="progress"><div id="' + id_proposition + '" class="progress-bar" role="progressbar" aria-valuenow="' + pourcentage + '" aria-valuemin="0" aria-valuemax="100" style="width: ' + pourcentage + '%;">' + pourcentage + '% (' + nb_votants +''+ affichage_votants +')</div></div>').appendTo( $("#resultatSondage") );
+                                        $('<div class="progress"><div id="' + id_proposition + '" class="progress-bar" role="progressbar" aria-valuenow="' + pourcentage + '" aria-valuemin="0" aria-valuemax="100" style="width: ' + pourcentage + '%;">' + pourcentage + '% (' + nb_votants +' '+ affichage_votants +')</div></div>').appendTo( $("#resultatSondage") );
 
                                     }
                                 }
