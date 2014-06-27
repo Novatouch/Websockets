@@ -343,18 +343,18 @@ begin
     SELECT row_to_json(t) AS json INTO enregistrement_json
     FROM(
         -- recupération id, theme et presentation sondage
-        SELECT son_id as id,
+        SELECT son_id as id, son_theme AS theme, son_presentation AS presentation, sta_nom AS statut,
         (
             SELECT array_to_json(array_agg(row_to_json(u)))
             FROM(
                 -- recuperation des questions
-                SELECT ques_id,
+                SELECT ques_id, ques_texte,
                 (
                     SELECT array_to_json(array_agg(row_to_json(v)))
                     FROM(
 
                         --recuperation des propositions
-                        SELECT pro_id, pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
+                        SELECT pro_id,pro_texte,pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
                         FROM webapp.proposition
                         WHERE pro_question_id=webapp.question.ques_id
                     ) v
