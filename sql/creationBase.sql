@@ -15,7 +15,7 @@ LC_CTYPE = 'fr_FR.UTF-8';
 
 \c webappbd postgres
 
-
+CREATE EXTENSION plv8;
 
 CREATE SCHEMA webapp;
 
@@ -310,7 +310,6 @@ END IF;
 -- rechercher dans la table utilisateurs si l'utilisateur existe
 SELECT q.ques_sondage_id INTO myrec
 FROM webapp.repondre r, webapp.question q, webapp.sondage s
-
 WHERE s.son_id=q.ques_sondage_id
 AND q.ques_id=r.rep_question_id
 AND r.rep_utilisateur_id=_id_utilisateur
@@ -331,6 +330,75 @@ return stats;
 end;
 $BODY$ language plpgsql SECURITY DEFINER;
 
+
+
+create or replace function lister_sondage_id_update(_id_sondage INT)
+returns varchar as $BODY$
+declare
+
+enregistrement_json record;
+
+begin
+
+    SELECT row_to_json(t) AS json INTO enregistrement_json
+    FROM(
+        -- recupération id, theme et presentation sondage
+        SELECT son_id as id,
+        (
+            SELECT array_to_json(array_agg(row_to_json(u)))
+            FROM(
+                -- recuperation des questions
+                SELECT ques_id,
+                (
+                    SELECT array_to_json(array_agg(row_to_json(v)))
+                    FROM(
+
+                        --recuperation des propositions
+                        SELECT pro_id, pro_nombre_votants, 100*pro_nombre_votants/(sum(pro_nombre_votants) OVER (PARTITION BY pro_question_id)) AS score
+                        FROM webapp.proposition
+                        WHERE pro_question_id=webapp.question.ques_id
+                    ) v
+                ) AS propositions
+                FROM webapp.question
+                WHERE ques_sondage_id=webapp.sondage.son_id
+            ) u
+        ) AS questions
+        FROM webapp.sondage, webapp.statut
+        WHERE son_statut_id=sta_id
+        AND son_id=_id_sondage
+    ) t;
+
+return enregistrement_json.json;
+end;
+$BODY$ language plpgsql SECURITY DEFINER;
+
+
+
+
+CREATE OR REPLACE FUNCTION enregistrer_reponse(data1 json)
+RETURNS text AS $$
+
+// recupération id utilisateur
+var id_utilisateur=data1['id'];
+
+try{
+  plv8.subtransaction(function(){
+                      
+    // parcours des questions
+    for(var i=0 ; i< data1['data']['questions'].length; i++){
+        // récupération id_question
+        var id_question=data1['data']['questions'][i]['id_question'];
+        var id_reponse=data1['data']['questions'][i]['id_reponse'];
+
+        // ajouter les enregistrements à la base
+        plv8.execute( 'INSERT INTO webapp.repondre (rep_utilisateur_id, rep_question_id, rep_proposition_id) VALUES ('+ id_utilisateur +', '+ id_question +', '+ id_reponse +')');
+    }
+    });
+} catch(e) {
+  
+}
+
+$$ LANGUAGE plv8 SECURITY DEFINER;
 
 ----********* TRIGGER FUNCTION ***********************************************
 CREATE OR REPLACE FUNCTION mise_a_jour_score() RETURNS trigger AS $$

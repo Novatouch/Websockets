@@ -15,7 +15,7 @@ $(document).ready(function() {
             var socket;
             var id_utilisateur='<?php if(isset($_SESSION['id'])){ echo $_SESSION['id'];} ?>';
             var token_utilisateur='<?php if(isset($_SESSION['token'])){ echo $_SESSION['token'];} ?>';
-   
+
 
             var host = "<?php echo $host_websocket; ?>";
 
@@ -33,7 +33,11 @@ $(document).ready(function() {
                     info_requete.token=token_utilisateur;
                     info_requete.requete='lister_sondage_en_cours';
 
-                    try{ socket.send(JSON.stringify(info_requete));  } catch(ex){ log(ex); }
+                    try{ 
+                            socket.send(JSON.stringify(info_requete));
+                           
+                       
+                       } catch(ex){ log(ex); }
 
                 }
 
@@ -60,9 +64,9 @@ $(document).ready(function() {
 
                                 var id_sondage = donnees['data'][j].id;
                                 var theme_sondage = donnees['data'][j].theme;
-                            
+
                                 if(j == 0){
-                                    
+
                                     $("#liste_sondage").append('<a id=' + id_sondage +' href="#" class="list-group-item active">' + theme_sondage +'</a>');
                                 } else {
                                     $("#liste_sondage").append('<a id=' + id_sondage +' href="#" class="list-group-item">' + theme_sondage +'</a>');
@@ -72,43 +76,43 @@ $(document).ready(function() {
                         }else if(donnees.requete == "lister_question_reponse_sondage"){
 
 
-                            $("#choixReponse").fadeOut( "slow" );
-                            $("#resultatSondage").fadeOut( "slow" );
+                            $("#choixReponse").fadeOut( "fast" ).empty();
+                            $("#resultatSondage").fadeOut( "fast" ).empty();
 
-                            // recup
-                            $("#choixReponse").empty();
-                            $("#resultatSondage").empty();
+
 
                             // récupération infos sondages
                             var id_sondage = donnees['data']['sondage'][0].id;
                             var theme_sondage = donnees['data']['sondage'][0].theme;
 
-                            
+
 
 
                             // récupération de la variable permettant de déterminer si l'utilisateur à déjà répondu au questionnaire
                             var participation = donnees['data']['participer'];
 
                             if(participation == "oui"){
-                            
+
                                 // affichage titre sondage
                                 $("#resultatSondage").append('<h2 id=' + id_sondage +' >'+ theme_sondage +'</h2>');
-                            
-                            
-                            
+
+
+
                                 // affichage des résultats
-                                
+
 
                                 // parcours de la liste des questions
                                 for( var i=0 ; i < donnees['data']['sondage'][0]['questions'].length; i++){
 
                                     // affichage des question
                                     var texte_question = donnees['data']['sondage'][0]['questions'][i]['ques_texte'];
+                                    //var id_question = donnees['data']['sondage'][0]['questions'][i]['ques_id'];
 
                                     $("<h4>" + texte_question + "</h4>").appendTo( $("#resultatSondage") );
 
                                     for( var j=0 ; j < donnees['data']['sondage'][0]['questions'][i]['propositions'].length; j++){
 
+                                        var id_proposition = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['pro_id'];
                                         var texte_proposition = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['pro_texte'];    
                                         var nb_votants = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['pro_nombre_votants'];
                                         var pourcentage = donnees['data']['sondage'][0]['questions'][i]['propositions'][j]['score'];
@@ -121,12 +125,13 @@ $(document).ready(function() {
                                         } else {
                                             var affichage_votants = 'votant';
                                         }
-                                        $('<div class="progress"><div class="progress-bar" role="progressbar" aria-valuenow="' + pourcentage + '" aria-valuemin="0" aria-valuemax="100" style="width: ' + pourcentage + '%;">' + pourcentage + '% (' + nb_votants +''+ affichage_votants +')</div></div>').appendTo( $("#resultatSondage") );
+                                        $('<div class="progress"><div id="' + id_proposition + '" class="progress-bar" role="progressbar" aria-valuenow="' + pourcentage + '" aria-valuemin="0" aria-valuemax="100" style="width: ' + pourcentage + '%;">' + pourcentage + '% (' + nb_votants +''+ affichage_votants +')</div></div>').appendTo( $("#resultatSondage") );
 
                                     }
                                 }
                                 // affichage du div resultatSondage
                                 $("#resultatSondage").fadeIn( "slow" );
+
 
                             }else if(participation == "non"){
 
@@ -143,7 +148,7 @@ $(document).ready(function() {
                                     // affichage de la question
                                     $("<h4 id="+ id_question +" >" + texte_question + "</h4>").appendTo( $("#choixReponse") );
 
-                                   // $("<p>").appendTo( $("#choixReponse") );
+                                    // $("<p>").appendTo( $("#choixReponse") );
 
                                     for( var j=0 ; j < donnees['data']['sondage'][0]['questions'][i]['propositions'].length; j++){
 
@@ -157,7 +162,7 @@ $(document).ready(function() {
                                     //$("</p>").appendTo( $("#choixReponse") );
                                 }
                                 $('<br/>').appendTo( $("#choixReponse") );
-                                $('<p><a class="btn btn-primary btn-lg" role="button" href="#">Soumettre</a></p>').appendTo( $("#choixReponse") );
+                                $('<div><a id="submit_button" class="btn btn-primary btn-lg" role="button" href="#">Soumettre</a></div>').appendTo( $("#choixReponse") );
 
                                 // affichage du div resultatSondage
                                 $("#choixReponse").fadeIn( "slow" );
@@ -167,6 +172,43 @@ $(document).ready(function() {
                             }
 
 
+                        }else if(donnees.requete == "mise_a_jour_resultat"){
+                            
+                            // récupération id_sondage
+                            var id_sondage = donnees['data']['id'];
+                            var id_actif = $("#liste_sondage .active").attr('id');
+                            var resultatSondage_visible = $('#resultatSondage').is(':visible');
+                            
+                            if((id_sondage == id_actif) && resultatSondage_visible == true){
+                                
+                                // mettre à jour les résultats
+                                for( var i=0 ; i < donnees['data']['questions'].length; i++){
+                                                           
+                                    for( var j=0 ; i < donnees['data']['questions'][i]['propositions'].length; j++){
+                                                           
+                                        var id_proposition = donnees['data']['questions'][i]['propositions'][j]['pro_id'];
+                                        var nbre_votants = donnees['data']['questions'][i]['propositions'][j]['pro_nombre_votants'];
+                                        var score = donnees['data']['questions'][i]['propositions'][j]['score'];
+
+                                        if(nbre_votants > 1){
+                                            var affichage_votants = 'votants';
+                                        } else {
+                                            var affichage_votants = 'votant';
+                                        }
+                                        $('#resultatSondage #'+ id_proposition +'').removeAttr('style')   
+                                        $('#resultatSondage #'+ id_proposition +'').attr( 'sytle', 'width:'+ score +'%;' );
+                                        $('#resultatSondage #'+ id_proposition +'').attr( "aria-valuenow", score );
+                                        $('#resultatSondage #'+ id_proposition +'').text( ""+ score +"% ("+ nbre_votants +" "+ affichage_votants +")" );
+                    
+                                        //$('#resultatSondage #'+ id_proposition +'').fadeOut( "fast" ).fadeIn( "slow" );
+                                    }
+                                }
+                                
+                            }else{
+                            }
+                            
+                            
+                            
                         }else {
                             log("< requete non traité par la partie JS");
                         }
@@ -212,11 +254,7 @@ $(document).ready(function() {
                 $('#choixReponse').append('<p>'+ txt + '</p>');
             }
 
-            $('#text').keypress(function(event) {
-                if (event.keyCode == '13') {
-                    send();
-                }
-            }); 
+          
 
             // clic sur le lien de la liste des sondage
             $('#liste_sondage').on('click', 'a', function(e) { 
@@ -236,6 +274,42 @@ $(document).ready(function() {
                 try{ socket.send(JSON.stringify(info_requete));  } catch(ex){ log(ex); }
 
             });
+
+            $('#choixReponse').on('click', 'a', function(e) { 
+                e.preventDefault();
+
+                // récupération des valeurs du questionnaire
+                // construction de la requete
+                var info_requete = {};
+                info_requete.id=id_utilisateur;
+                info_requete.token=token_utilisateur;
+                info_requete.requete='envoyer_reponse_questionnaire';
+                info_requete.data={};
+                info_requete.data['id_sondage']=$("#choixReponse h2").attr('id');
+                info_requete.data['questions']=[];
+
+                $("#choixReponse h4").each(function( index ) {
+                    info_requete.data['questions'][index]={};
+
+                    // récupération id de la question
+                    id=$( this ).attr('id');
+                    info_requete.data['questions'][index]['id_question']=id;
+
+                    // récupération de la réponse
+                    var selecteur="#choixReponse [name^='"+ id +"']:checked";
+                    info_requete.data['questions'][index]['id_reponse']=$(selecteur).attr('id');
+
+                    
+
+                });      
+
+                // envoi de la requête au serveur websocket
+                try{ socket.send(JSON.stringify(info_requete));  } catch(ex){ log(ex); }
+
+                $("#choixReponse").fadeOut( "fast" );
+
+            });
+
 
             $('#disconnect').click(function(){
                 socket.close();

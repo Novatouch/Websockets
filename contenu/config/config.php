@@ -6,5 +6,5 @@ $dbname='webappbd';
 $user='webappbd_auth'; 
 $password='X4fzk78A';
 
-$host_websocket='ws://195.220.53.88:12345';
+$host_websocket='ws://192.168.42.41:12345';
 ?>

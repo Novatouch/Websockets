@@ -17,7 +17,7 @@ class ChatBot extends WebSocket{
 
         // decodage du token et de l'id de l'utilisateur
         $msg_decoded=json_decode($msg,true);
-        
+
         echo $msg;
 
         if (!isset($msg_decoded["id"]) || !isset($msg_decoded["token"]) || !isset($msg_decoded["requete"]))
@@ -37,7 +37,7 @@ class ChatBot extends WebSocket{
 
             // connexion BD
             $chaine_connexion = "host=$host port=$port dbname=$dbname user=$userbd password=$password options='--client_encoding=UTF8'";
-            
+
             $bd_connexion = pg_connect($chaine_connexion);
 
             if($bd_connexion == FALSE)
@@ -104,14 +104,14 @@ class ChatBot extends WebSocket{
                                 case ($requete == "lister_sondage_en_cours" || $requete == "lister_question_reponse_sondage") :
 
                                 $verification="ok";
-                                
+
                                 switch($requete){
                                     case ("lister_question_reponse_sondage") :
-                                    
+
                                     if(!isset($msg_decoded["id_sondage"])){
                                         $verification="nok";
                                     }
-                                    
+
                                     // verification de la présence de la variable contenant l'identifiant du sondage
                                     break;
                                 }
@@ -132,12 +132,12 @@ class ChatBot extends WebSocket{
 
                                     switch($requete){
                                         case ("lister_sondage_en_cours") :
-                                            $requete_sql = "SELECT json FROM webapp.vue_sondage;";
+                                        $requete_sql = "SELECT json FROM webapp.vue_sondage;";
                                         break;
                                         case ("lister_question_reponse_sondage") :
-                                        
-                                            $id_sondage=pg_escape_string($msg_decoded["id_sondage"]);
-                                            $requete_sql = "SELECT lister_sondage_id('$id_sondage','$id') AS json;";
+
+                                        $id_sondage=pg_escape_string($msg_decoded["id_sondage"]);
+                                        $requete_sql = "SELECT lister_sondage_id('$id_sondage','$id') AS json;";
                                         break;
                                     }
 
@@ -166,14 +166,58 @@ class ChatBot extends WebSocket{
                                 }
                                 break;
 
-                                case "utill_voter" :
+                                case "envoyer_reponse_questionnaire" :
+
+                                // envoyer les données dans la base de donnée
+                                $requete_sql = "SELECT enregistrer_reponse('".$msg."'::JSON);";
 
 
-                                // envoi des nouveaux resultats à tout les clients
-                                foreach ($this->users as $utilisateur) {
-                                    $this->send($utilisateur->socket,json_encode($message)); 
+                                $resultat = pg_exec($bd_connexion, $requete_sql);
+
+                                // Si la requête a échouée redirection
+                                if($resultat == FALSE)
+                                {
+                                    unset($message);
+                                    $message['requete']=$requete;
+                                    $message['statut']="echoue";
+                                    $message['debug']="Une requête de récupération de donnée auprès du serveur de base de donnée à échouée"; 
+
+                                    $this->send($user->socket,json_encode($message)); 
                                 }
+                                else
+                                {
+                                    $id_sondage=$msg_decoded['data']['id_sondage'];
 
+                                    $requete_sql="SELECT lister_sondage_id_update(".$id_sondage.") AS json;";
+
+
+                                    $resultat = pg_exec($bd_connexion, $requete_sql);
+                                    if($resultat == FALSE)
+                                    {
+                                        unset($message);
+                                        $message['requete']=$requete;
+                                        $message['statut']="echoue";
+                                        $message['debug']="L'envoi au serveur des votes à échoué"; 
+
+                                        $this->send($user->socket,json_encode($message)); 
+                                    }
+                                    else
+                                    {
+                                        $tableau = pg_fetch_array($resultat,0, PGSQL_ASSOC);
+
+                                        unset($message);
+                                        $resultat_json = $tableau['json'];
+                                        $message='{"requete":"mise_a_jour_resultat","statut":"ok","data":'.$resultat_json.'}';
+
+                                        sleep(1);
+                                        // envoi des nouveaux resultats à tout les clients
+                                        foreach ($this->users as $utilisateur) {
+
+                                            $this->send($utilisateur->socket,$message); 
+                                        }
+                                    }
+
+                                }
                                 break;
                                 case "gla"    : $this->send($user->socket,"zup human");                        break;
                                 case "name"  : $this->send($user->socket,"my name is Multivac, silly I know"); break;
